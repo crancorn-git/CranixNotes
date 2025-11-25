@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cranotes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+            colors: {
+              ios: {
+                light: '#F2F2F7',
+                dark: '#000000',
+                cardLight: '#FFFFFF',
+                cardDark: '#1C1C1E',
+                inputLight: '#E5E5EA',
+                inputDark: '#2C2C2E',
+                green: '#22c55e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Apple-style Scrollbar - Minimal/Hidden */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+      }
+      .custom-scrollbar:hover::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 20px;
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(255,255,255,0.2);
+      }
+
+      /* View Transitions for Grid Morphing */
+      ::view-transition-group(*) {
+        animation-duration: 0.5s;
+        animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      
+      ::view-transition-old(*) {
+        /* Prevent fading out content during resize, just morph shape */
+        animation: none;
+        opacity: 0; 
+      }
+      ::view-transition-new(*) {
+        animation: none; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-[#F2F2F7] text-gray-900 dark:bg-[#000000] dark:text-white transition-colors duration-500 selection:bg-green-500 selection:text-white">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
