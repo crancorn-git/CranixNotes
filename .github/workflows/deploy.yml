@@ -33,21 +33,19 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          # We put these boolean settings first to avoid indentation errors
+          draft: true
+          generate_release_notes: true
           files: |
             dist/assets/*
-          generate_release_notes: true
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Artifacts to Release
-              uses: softprops/action-gh-release@v1
-              if: startsWith(github.ref, 'refs/tags/')
-              with:
-                files: |
-                  dist/assets/*
-                generate_release_notes: true
-                draft: true   
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
