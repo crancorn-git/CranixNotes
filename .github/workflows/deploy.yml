@@ -33,7 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          # We put these boolean settings first to avoid indentation errors
+          token: ${{ secrets.RELEASE_TOKEN }}
           draft: true
           generate_release_notes: true
           files: |
