@@ -1,7 +1,7 @@
 {
   "name": "cranotes",
   "private": true,
-  "version": "1.09.4",
+  "version": "1.2.0",
   "main": "dist-electron/main.cjs", 
   "author": "Cranotes Team",
   "description": "A calm, tile-based dashboard.",
