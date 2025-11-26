@@ -1,0 +1,20 @@
+/* Electron Window Dragging Logic */
+
+.titlebar-drag {
+  -webkit-app-region: drag;
+  user-select: none; /* Important: Prevents text selection when trying to drag */
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+
+/* Make sure buttons are clickable */
+button.titlebar-no-drag, 
+.titlebar-no-drag {
+  cursor: pointer;
+}
+
+/* DEBUG: Uncomment the line below to see the drag area in RED */
+/* .titlebar-drag { background-color: rgba(255, 0, 0, 0.2); } */

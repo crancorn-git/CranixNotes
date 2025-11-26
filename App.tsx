@@ -11,9 +11,16 @@ import Tile from './components/Tile';
 import { TodoWidget, NoteWidget, TimerWidget, CounterWidget, ImageWidget, LinksWidget, HabitWidget, ClockWidget, StopwatchWidget, QuoteWidget, SpacerWidget, CalculatorWidget, CountdownWidget } from './components/Widgets';
 import { loadAreas, saveAreas, loadDarkMode, saveDarkMode, loadSettings, saveSettings } from './services/storage';
 
-// --- PWA Import ---
-// @ts-ignore
-import { useRegisterSW } from 'virtual:pwa-register/react';
+// Define Electron window interface locally to ensure no TS errors
+declare global {
+  interface Window {
+    electron?: {
+      onUpdateAvailable: (cb: () => void) => void;
+      onUpdateDownloaded: (cb: () => void) => void;
+      restartApp: () => void;
+    };
+  }
+}
 
 const COLORS = [
   { id: 'blue', class: 'bg-blue-500' },
@@ -84,21 +91,28 @@ const App: React.FC = () => {
   const [showPageSettings, setShowPageSettings] = useState(false);
   const [showAddTileMenu, setShowAddTileMenu] = useState(false);
 
-  // --- Auto Update Logic ---
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
+  // --- ELECTRON UPDATE LOGIC ---
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [readyToInstall, setReadyToInstall] = useState(false);
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  useEffect(() => {
+    if (window.electron) {
+      window.electron.onUpdateAvailable(() => {
+        setUpdateAvailable(true);
+      });
+      window.electron.onUpdateDownloaded(() => {
+        setUpdateAvailable(false);
+        setReadyToInstall(true);
+      });
+    }
+  }, []);
 
-  const handleUpdate = async () => {
-      setIsUpdating(true);
-      // Wait a moment to show the animation (UX)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      updateServiceWorker(true);
+  const handleRestart = () => {
+    if (window.electron) {
+      window.electron.restartApp();
+    }
   };
-  // -------------------------
+  // -----------------------------
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -285,18 +299,19 @@ const App: React.FC = () => {
   return (
     <div className={`flex h-screen w-full transition-colors duration-500 overflow-hidden ${fontClass} selection:bg-green-500/30 selection:text-green-900 dark:selection:text-green-200 ${BACKGROUNDS[appSettings.background]} ${appSettings.background === 'midnight' ? '' : ''}`}>
       
-      {/* Main Content Area */}
+      {/* Main Content Area - Full Width */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
         
-        {/* Header */}
-        <header className="px-8 pt-10 pb-6 flex items-end justify-between z-10">
+        {/* Header - Draggable Region */}
+        <header className="px-8 pt-10 pb-6 flex items-end justify-between z-10 titlebar-drag">
             <div className="flex flex-col gap-1">
                  {appSettings.userName && (
                      <h1 className="text-xl text-gray-400 dark:text-gray-500 font-medium mb-[-4px]">
                          Good Day, <span className="text-gray-800 dark:text-white font-bold">{appSettings.userName}</span>
                      </h1>
                  )}
-                 <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setShowPageSettings(!showPageSettings)}>
+                 {/* Interactive: No Drag */}
+                 <div className="flex items-center gap-3 group cursor-pointer titlebar-no-drag" onClick={() => setShowPageSettings(!showPageSettings)}>
                     <h2 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">{activeArea.label}</h2>
                     <ChevronDown size={20} className="text-gray-400 mt-2 group-hover:text-gray-600 transition-colors" />
                  </div>
@@ -304,11 +319,11 @@ const App: React.FC = () => {
                     <p className="text-gray-400 dark:text-gray-500 font-medium text-sm">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                  )}
 
-                 {/* Settings Popover */}
+                 {/* Settings Popover - Interactive: No Drag */}
                  {showPageSettings && (
                      <>
-                     <div className="fixed inset-0 z-40" onClick={() => setShowPageSettings(false)} />
-                     <div className={`absolute top-24 left-8 w-72 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 border border-white/20 ${BLUR_STRENGTHS[appSettings.blurStrength]}`}>
+                     <div className="fixed inset-0 z-40 titlebar-no-drag" onClick={() => setShowPageSettings(false)} />
+                     <div className={`absolute top-24 left-8 w-72 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 border border-white/20 ${BLUR_STRENGTHS[appSettings.blurStrength]} titlebar-no-drag`}>
                          <h4 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider">Color Theme</h4>
                          <div className="grid grid-cols-4 gap-2 mb-6">
                             {COLORS.map(c => (
@@ -325,7 +340,8 @@ const App: React.FC = () => {
                  )}
             </div>
 
-            <div className="relative">
+            {/* Add Widget Button - Interactive: No Drag */}
+            <div className="relative titlebar-no-drag">
                <button 
                  onClick={() => setShowAddTileMenu(!showAddTileMenu)}
                  className="w-12 h-12 bg-white dark:bg-[#1C1C1E] text-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
@@ -334,8 +350,8 @@ const App: React.FC = () => {
                </button>
                {showAddTileMenu && (
                    <>
-                   <div className="fixed inset-0 z-40" onClick={() => setShowAddTileMenu(false)} />
-                   <div className={`absolute right-0 mt-4 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 border border-white/20 max-h-96 overflow-y-auto custom-scrollbar ${BLUR_STRENGTHS[appSettings.blurStrength]}`}>
+                   <div className="fixed inset-0 z-40 titlebar-no-drag" onClick={() => setShowAddTileMenu(false)} />
+                   <div className={`absolute right-0 mt-4 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 border border-white/20 max-h-96 overflow-y-auto custom-scrollbar ${BLUR_STRENGTHS[appSettings.blurStrength]} titlebar-no-drag`}>
                       {[
                           { type: WidgetType.TODO, label: 'To-Do', icon: ListTodo, color: 'text-green-500' },
                           { type: WidgetType.NOTE, label: 'Note', icon: StickyNote, color: 'text-yellow-500' },
@@ -382,6 +398,14 @@ const App: React.FC = () => {
                 {renderWidget(tile)}
               </Tile>
             ))}
+            
+            {activeArea.tiles.length === 0 && (
+              <div className="col-span-full h-64 flex flex-col items-center justify-center text-gray-400">
+                <LayoutGrid size={48} className="opacity-20 mb-4" />
+                <p className="font-medium text-lg">Empty Space</p>
+                <button onClick={() => setShowAddTileMenu(true)} className="text-green-500 font-semibold mt-2 text-sm hover:underline">Add a widget</button>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -410,7 +434,11 @@ const App: React.FC = () => {
                           `}>
                               {renderIcon(area.icon, isActive ? 'w-5 h-5' : 'w-5 h-5')}
                           </div>
+                          
+                          {/* Dot indicator for active */}
                           {isActive && <div className={`absolute -bottom-1 w-1 h-1 rounded-full bg-${area.theme}-500 opacity-60`}></div>}
+                          
+                          {/* Tooltip */}
                           <span className="absolute -top-14 px-2 py-1 bg-black/80 backdrop-blur-md text-white text-[10px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                               {area.label}
                           </span>
@@ -444,17 +472,17 @@ const App: React.FC = () => {
                  {darkMode ? <Moon size={18} /> : <Sun size={18} />}
               </button>
 
-              {/* UPDATE NOTIFICATION BUTTON */}
-              {needRefresh && (
+              {/* ELECTRON UPDATE NOTIFICATION BUTTON */}
+              {(updateAvailable || readyToInstall) && (
                 <div className="flex items-center ml-1 animate-in slide-in-from-right duration-500">
                     <div className="w-px h-8 bg-gray-300 dark:bg-gray-700 mx-2"></div>
                     <button 
-                        onClick={handleUpdate}
-                        disabled={isUpdating}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all active:scale-95 relative overflow-hidden"
-                        title="New update available!"
+                        onClick={readyToInstall ? handleRestart : undefined}
+                        disabled={!readyToInstall}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-all ${readyToInstall ? 'hover:bg-blue-600 active:scale-95 cursor-pointer' : 'cursor-default'}`}
+                        title={readyToInstall ? "Restart to update" : "Downloading update..."}
                     >
-                        {isUpdating ? (
+                        {updateAvailable ? (
                             <Loader2 size={20} className="animate-spin" />
                         ) : (
                             <>
@@ -468,22 +496,38 @@ const App: React.FC = () => {
 
           </div>
       </div>
-      
-      {/* (Modals omitted for brevity - use previous implementation) */}
+
+      {/* Add Page Modal */}
       {showAddPageModal && (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pt-12 titlebar-no-drag">
           <div className={`bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md text-center animate-in zoom-in-95 border border-white/20`}>
              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">New Space</h3>
              <p className="text-gray-500 mb-8">Create a new dashboard for your widgets.</p>
-             <input autoFocus value={newPageName} onChange={e => setNewPageName(e.target.value)} className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] text-gray-900 dark:text-white rounded-2xl px-5 py-4 text-lg outline-none mb-6 text-center font-semibold placeholder-gray-400 focus:ring-2 focus:ring-green-500/50 transition-all" placeholder="Name (e.g. Travel)" />
+             
+             <input 
+               autoFocus
+               value={newPageName}
+               onChange={e => setNewPageName(e.target.value)}
+               className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] text-gray-900 dark:text-white rounded-2xl px-5 py-4 text-lg outline-none mb-6 text-center font-semibold placeholder-gray-400 focus:ring-2 focus:ring-green-500/50 transition-all"
+               placeholder="Name (e.g. Travel)"
+             />
+
+             {/* Icon Picker */}
              <div className="mb-8">
                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Choose Icon</p>
                  <div className="grid grid-cols-6 gap-3">
                      {Object.entries(ICONS).filter(([k]) => k !== 'settings').map(([key, IconComp]) => (
-                         <button key={key} onClick={() => setNewPageIcon(key)} className={`aspect-square rounded-xl flex items-center justify-center transition-all ${newPageIcon === key ? `bg-green-500 text-white shadow-lg scale-110` : 'bg-gray-100 dark:bg-white/5 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}><IconComp size={20} /></button>
+                         <button
+                            key={key}
+                            onClick={() => setNewPageIcon(key)}
+                            className={`aspect-square rounded-xl flex items-center justify-center transition-all ${newPageIcon === key ? `bg-green-500 text-white shadow-lg scale-110` : 'bg-gray-100 dark:bg-white/5 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                         >
+                             <IconComp size={20} />
+                         </button>
                      ))}
                  </div>
              </div>
+             
              <div className="flex gap-3">
                <button onClick={() => setShowAddPageModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-white/10 rounded-xl text-gray-900 dark:text-white font-semibold text-lg active:scale-95 transition-transform">Cancel</button>
                <button onClick={addNewPage} disabled={!newPageName.trim()} className="flex-1 py-3.5 bg-green-500 rounded-xl text-white font-bold text-lg disabled:opacity-50 active:scale-95 transition-transform shadow-lg shadow-green-500/20">Create</button>
@@ -491,77 +535,158 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-      
+
+      {/* Global Settings Modal (iOS Settings Style) */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pt-12 titlebar-no-drag">
              <div className="bg-[#F2F2F7] dark:bg-[#000000] w-full max-w-2xl h-[80vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95">
+                 {/* Modal Header */}
                  <div className="bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-xl px-6 py-4 flex justify-between items-center border-b border-gray-200 dark:border-white/10">
                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
-                     <button onClick={() => setShowSettingsModal(false)} className="bg-gray-200 dark:bg-white/10 p-2 rounded-full hover:bg-gray-300 dark:hover:bg-white/20"><span className="font-bold text-green-500 px-2">Done</span></button>
+                     <button onClick={() => setShowSettingsModal(false)} className="bg-gray-200 dark:bg-white/10 p-2 rounded-full hover:bg-gray-300 dark:hover:bg-white/20">
+                         <Trash2 size={0} className="hidden" /> {/* Hack to keep spacing if needed, but using X instead */}
+                         <span className="font-bold text-green-500 px-2">Done</span>
+                     </button>
                  </div>
+
                  <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                     
+                     {/* Appearance Section */}
                      <div className="mb-8">
                          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-4">Appearance</h3>
                          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+                             
+                             {/* Background Selector */}
                              <div className="p-4 border-b border-gray-100 dark:border-white/5">
                                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">Background</label>
                                  <div className="grid grid-cols-2 gap-3">
                                      {Object.keys(BACKGROUNDS).map((bgKey) => (
-                                         <button key={bgKey} onClick={() => setAppSettings(s => ({ ...s, background: bgKey as any }))} className={`h-16 rounded-xl border-2 transition-all capitalize text-sm font-medium flex items-center justify-center ${appSettings.background === bgKey ? 'border-green-500 text-green-500 bg-green-50 dark:bg-green-900/20' : 'border-transparent bg-gray-100 dark:bg-white/5 text-gray-500'}`}>{bgKey === 'midnight' ? 'Slate' : bgKey}</button>
+                                         <button 
+                                            key={bgKey}
+                                            onClick={() => setAppSettings(s => ({ ...s, background: bgKey as any }))}
+                                            className={`h-16 rounded-xl border-2 transition-all capitalize text-sm font-medium flex items-center justify-center
+                                                ${appSettings.background === bgKey ? 'border-green-500 text-green-500 bg-green-50 dark:bg-green-900/20' : 'border-transparent bg-gray-100 dark:bg-white/5 text-gray-500'}
+                                            `}
+                                         >
+                                             {bgKey === 'midnight' ? 'Slate' : bgKey}
+                                         </button>
                                      ))}
                                  </div>
                              </div>
+
+                             {/* Typography */}
                              <div className="p-4 border-b border-gray-100 dark:border-white/5">
                                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">Typography</label>
                                  <div className="flex bg-gray-100 dark:bg-[#2C2C2E] p-1 rounded-lg">
                                      {['sans', 'serif', 'mono'].map((f) => (
-                                         <button key={f} onClick={() => setAppSettings(s => ({ ...s, font: f as any }))} className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${appSettings.font === f ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}>{f === 'sans' ? 'Modern' : f === 'serif' ? 'Elegant' : 'Tech'}</button>
+                                         <button 
+                                            key={f}
+                                            onClick={() => setAppSettings(s => ({ ...s, font: f as any }))}
+                                            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${appSettings.font === f ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}
+                                         >
+                                             {f === 'sans' ? 'Modern' : f === 'serif' ? 'Elegant' : 'Tech'}
+                                         </button>
                                      ))}
                                  </div>
                              </div>
-                             <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+
+                              {/* Greeting Name */}
+                              <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
                                   <label className="text-sm font-medium text-gray-900 dark:text-white">Greeting Name</label>
-                                  <input value={appSettings.userName} onChange={(e) => setAppSettings(s => ({ ...s, userName: e.target.value }))} placeholder="e.g. John" className="bg-gray-100 dark:bg-[#2C2C2E] rounded-lg px-3 py-1.5 text-sm outline-none text-right w-32" />
+                                  <input 
+                                     value={appSettings.userName}
+                                     onChange={(e) => setAppSettings(s => ({ ...s, userName: e.target.value }))}
+                                     placeholder="e.g. John"
+                                     className="bg-gray-100 dark:bg-[#2C2C2E] rounded-lg px-3 py-1.5 text-sm outline-none text-right w-32"
+                                  />
                              </div>
+
+                             {/* Tile Roundness Slider */}
                              <div className="p-4 border-b border-gray-100 dark:border-white/5">
-                                 <div className="flex justify-between mb-2"><label className="text-sm font-medium text-gray-900 dark:text-white">Tile Roundness</label><span className="text-xs text-gray-400">{appSettings.tileRounding}px</span></div>
-                                 <input type="range" min="0" max="40" value={appSettings.tileRounding} onChange={(e) => setAppSettings(s => ({ ...s, tileRounding: parseInt(e.target.value) }))} className="w-full accent-green-500" />
+                                 <div className="flex justify-between mb-2">
+                                    <label className="text-sm font-medium text-gray-900 dark:text-white">Tile Roundness</label>
+                                    <span className="text-xs text-gray-400">{appSettings.tileRounding}px</span>
+                                 </div>
+                                 <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="40" 
+                                    value={appSettings.tileRounding} 
+                                    onChange={(e) => setAppSettings(s => ({ ...s, tileRounding: parseInt(e.target.value) }))}
+                                    className="w-full accent-green-500"
+                                 />
                              </div>
+
+                             {/* Grid Gap Slider */}
                              <div className="p-4 border-b border-gray-100 dark:border-white/5">
-                                 <div className="flex justify-between mb-2"><label className="text-sm font-medium text-gray-900 dark:text-white">Grid Spacing</label><span className="text-xs text-gray-400">{appSettings.gridGap}px</span></div>
-                                 <input type="range" min="12" max="48" value={appSettings.gridGap} onChange={(e) => setAppSettings(s => ({ ...s, gridGap: parseInt(e.target.value) }))} className="w-full accent-green-500" />
+                                 <div className="flex justify-between mb-2">
+                                    <label className="text-sm font-medium text-gray-900 dark:text-white">Grid Spacing</label>
+                                    <span className="text-xs text-gray-400">{appSettings.gridGap}px</span>
+                                 </div>
+                                 <input 
+                                    type="range" 
+                                    min="12" 
+                                    max="48" 
+                                    value={appSettings.gridGap} 
+                                    onChange={(e) => setAppSettings(s => ({ ...s, gridGap: parseInt(e.target.value) }))}
+                                    className="w-full accent-green-500"
+                                 />
                              </div>
+
+                              {/* Blur Strength */}
                               <div className="p-4">
                                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">Glass Blur</label>
                                  <div className="flex bg-gray-100 dark:bg-[#2C2C2E] p-1 rounded-lg">
                                      {['low', 'medium', 'high'].map((b) => (
-                                         <button key={b} onClick={() => setAppSettings(s => ({ ...s, blurStrength: b as any }))} className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${appSettings.blurStrength === b ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}>{b}</button>
+                                         <button 
+                                            key={b}
+                                            onClick={() => setAppSettings(s => ({ ...s, blurStrength: b as any }))}
+                                            className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all capitalize ${appSettings.blurStrength === b ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}
+                                         >
+                                             {b}
+                                         </button>
                                      ))}
                                  </div>
                              </div>
+
                          </div>
                      </div>
                      
+                     {/* Interface Section */}
                      <div className="mb-8">
                          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-4">Interface</h3>
                          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+                             
                              <div className="p-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
                                  <label className="text-sm font-medium text-gray-900 dark:text-white">Show Header Date</label>
-                                 <button onClick={() => setAppSettings(s => ({ ...s, showDate: !s.showDate }))} className={`w-12 h-7 rounded-full transition-colors relative ${appSettings.showDate ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                 <button 
+                                    onClick={() => setAppSettings(s => ({ ...s, showDate: !s.showDate }))}
+                                    className={`w-12 h-7 rounded-full transition-colors relative ${appSettings.showDate ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                 >
                                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${appSettings.showDate ? 'left-6' : 'left-1'}`} />
                                  </button>
                              </div>
+
                              <div className="p-4 flex items-center justify-between">
                                  <label className="text-sm font-medium text-gray-900 dark:text-white">Dock Size</label>
                                  <div className="flex bg-gray-100 dark:bg-[#2C2C2E] p-1 rounded-lg w-40">
                                      {['small', 'medium', 'large'].map((sizeOption) => (
-                                         <button key={sizeOption} onClick={() => setAppSettings(prev => ({ ...prev, dockSize: sizeOption as any }))} className={`flex-1 py-1 rounded-md text-xs font-medium transition-all capitalize ${appSettings.dockSize === sizeOption ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}>{sizeOption === 'medium' ? 'Std' : sizeOption}</button>
+                                         <button 
+                                            key={sizeOption}
+                                            onClick={() => setAppSettings(prev => ({ ...prev, dockSize: sizeOption as any }))}
+                                            className={`flex-1 py-1 rounded-md text-xs font-medium transition-all capitalize ${appSettings.dockSize === sizeOption ? 'bg-white dark:bg-[#3A3A3C] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500'}`}
+                                         >
+                                             {sizeOption === 'medium' ? 'Std' : sizeOption}
+                                         </button>
                                      ))}
                                  </div>
                              </div>
+
                          </div>
                      </div>
 
+
+                     {/* Data Management Section */}
                      <div>
                          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-4">Data Management</h3>
                          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
@@ -569,19 +694,32 @@ const App: React.FC = () => {
                                  <span className="text-sm font-medium text-gray-900 dark:text-white">Export Data (JSON)</span>
                                  <ChevronDown size={16} className="text-gray-400 -rotate-90" />
                              </button>
+                             
                              <div className="relative w-full">
-                                <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleImport}
+                                    accept=".json"
+                                    className="hidden"
+                                />
                                 <button onClick={() => fileInputRef.current?.click()} className="w-full p-4 text-left flex items-center justify-between border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                     <span className="text-sm font-medium text-gray-900 dark:text-white">Import Data</span>
                                     <ChevronDown size={16} className="text-gray-400 -rotate-90" />
                                 </button>
                              </div>
+
                              <button onClick={resetApp} className="w-full p-4 text-left flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
                                  <span className="text-sm font-medium text-red-500">Reset Application</span>
                                  <Trash2 size={16} className="text-red-500" />
                              </button>
                          </div>
                      </div>
+
+                     <div className="mt-8 text-center">
+                         <p className="text-xs text-gray-400">Cranotes v1.0.5</p>
+                     </div>
+
                  </div>
              </div>
         </div>
