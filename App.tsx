@@ -225,7 +225,7 @@ const App: React.FC = () => {
   const exportData = () => {
       const dataStr = JSON.stringify(areas);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      const exportFileDefaultName = 'cranotes_backup.json';
+      const exportFileDefaultName = 'cranixnotes_backup.json';
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', dataUri);
       linkElement.setAttribute('download', exportFileDefaultName);
@@ -717,7 +717,7 @@ const App: React.FC = () => {
                      </div>
 
                      <div className="mt-8 text-center">
-                         <p className="text-xs text-gray-400">Cranotes v1.0.5</p>
+                         <p className="text-xs text-gray-400">CranixNotes v1.0.5</p>
                      </div>
 
                  </div>

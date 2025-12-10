@@ -1,9 +1,9 @@
 {
-  "name": "cranotes",
+  "name": "cranixnotes",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "main": "dist-electron/main.cjs", 
-  "author": "Cranotes Team",
+  "author": "CranixNotes Team",
   "description": "A calm, tile-based dashboard.",
   "scripts": {
     "dev": "vite",
@@ -13,15 +13,15 @@
     "electron:build": "vite build && electron-builder"
   },
   "build": {
-    "appId": "com.cranotes.app",
-    "productName": "Cranotes",
+    "appId": "com.cranixnotes.app",
+    "productName": "CranixNotes",
     "directories": {
       "output": "release"
     },
-    "win": {
-      "target": "nsis",
-      "icon": "public/icon.ico"
-    },
+"win": {
+  "target": "nsis",
+  "icon": "public/icon.ico"
+},
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -32,7 +32,7 @@
       {
         "provider": "github",
         "owner": "crancorn-git",
-        "repo": "Cranotes"
+        "repo": "CranixNotes"
       }
     ]
   },

@@ -1,11 +1,9 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { autoUpdater } from 'electron-updater';
 
-// Helper to get __dirname in ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Note: In CommonJS (.cjs), __dirname is available natively.
+// We do NOT need the import.meta.url hack anymore.
 
 process.env.DIST = path.join(__dirname, '../dist');
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(__dirname, '../public');
@@ -18,14 +16,15 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    frame: false, // <--- This removes the white system bar completely
-    titleBarStyle: 'hidden', // <--- This keeps the "Snap Layout" functionality
+    // Frame settings
+    frame: false, 
+    titleBarStyle: 'hidden', 
     titleBarOverlay: {
-      color: '#00000000', // Transparent background
-      symbolColor: '#9CA3AF', // Gray color for the ( _ □ X ) buttons
-      height: 30 // Height of the buttons
+      color: '#00000000',
+      symbolColor: '#9CA3AF',
+      height: 30
     },
-    icon: path.join(process.env.VITE_PUBLIC, 'icon.ico'), // <--- Point to .ico
+    icon: path.join(process.env.VITE_PUBLIC, 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -41,6 +40,7 @@ function createWindow() {
     win.loadFile(path.join(process.env.DIST, 'index.html'));
   }
 
+  // Only run auto-updater in production
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();
   }
